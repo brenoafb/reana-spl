@@ -91,7 +91,7 @@ class Options {
                                  + "FEATURE_FAMILY_PRODUCT (feature-family-product-based).")
                 .withRequiredArg()
                 .ofType(AnalysisStrategy.class)
-                .defaultsTo(AnalysisStrategy.FAMILY_PRODUCT)
+                .defaultsTo(AnalysisStrategy.FEATURE_FAMILY_PRODUCT)
                 .describedAs("FEATURE_FAMILY | FEATURE_PRODUCT | FAMILY | FAMILY_PRODUCT | PRODUCT | FEATURE_FAMILY_PRODUCT");
 
         OptionSpec<Void> helpOption = optionParser
