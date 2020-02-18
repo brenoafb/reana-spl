@@ -55,8 +55,10 @@ public class FeatureFamilyProductBasedAnalyzer {
     public IReliabilityAnalysisResults evaluateReliability(RDGNode node, Stream<Collection<String>> configurations, ConcurrencyStrategy concurrencyStrategy) throws CyclicRdgException {
     	List<RDGNode> dependencies = node.getDependenciesTransitiveClosure();
     	
+    	/* feature step */
     	List<Component<String>> components = firstPhase.getReliabilityExpressions(dependencies, concurrencyStrategy);
     	
+    	/* preparing variables */
     	int n = components.size();
     	List<String> variables = components.stream().map(e -> e.getId()).collect(Collectors.toList());
     	List<String> expressions = components.stream().map(e -> e.getAsset()).collect(Collectors.toList());
@@ -69,8 +71,8 @@ public class FeatureFamilyProductBasedAnalyzer {
     		var2exp.put(variables.get(i), expressions.get(i));
     		var2pc.put(variables.get(i), pcs.get(i));
     	}
-
         
+    	/* expression variability encoding */
     	/* get the ite expressions */
     	for (int i = 0; i < n; i++) {
     		String var = variables.get(i);
@@ -86,8 +88,10 @@ public class FeatureFamilyProductBasedAnalyzer {
     		var2ite.put(var, ite);
     	}
     	
+    	/* this is the single expression that encodes the reliability of the product line */
     	String iteExpression = var2ite.get(variables.get(n-1));
 
+    	/* product iteration step */
     	Map<Collection<String>, Double> results = new HashMap<Collection<String>, Double>();
     	for (Collection<String> config : configurations.collect(Collectors.toList())) {
     		Map <String, Double> var2double = new HashMap<String, Double>();
@@ -101,9 +105,6 @@ public class FeatureFamilyProductBasedAnalyzer {
     			} else if (var2double.containsKey(pc)) {
     				var2double.put(var, var2double.get(pc));
     			} else {
-    				var2double.put(var, 0.0);
-    			}
-    			if (var == "BSN") {
     				var2double.put(var, 0.0);
     			}
     		}
