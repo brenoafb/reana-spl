@@ -239,7 +239,7 @@ public class Analyzer {
     }
 
     public IReliabilityAnalysisResults evaluateFeatureFamilyProductBasedReliability(RDGNode node, Stream<Collection<String>> configurations) throws CyclicRdgException, UnknownFeatureException {
-        return featureFamilyProductBasedAnalyzerImpl.evaluateReliability(node, this.concurrencyStrategy);
+        return featureFamilyProductBasedAnalyzerImpl.evaluateReliability(node, configurations, this.concurrencyStrategy);
     }
     
     /**

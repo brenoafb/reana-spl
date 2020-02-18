@@ -5,6 +5,7 @@ import jadd.JADD;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import paramwrapper.ParametricModelChecker;
 import tool.CyclicRdgException;
@@ -12,6 +13,7 @@ import tool.RDGNode;
 import tool.analyzers.ADDReliabilityResults;
 import tool.analyzers.IPruningStrategy;
 import tool.analyzers.IReliabilityAnalysisResults;
+import tool.analyzers.MapBasedReliabilityResults;
 import tool.analyzers.NoPruningStrategy;
 import tool.analyzers.buildingblocks.AssetProcessor;
 import tool.analyzers.buildingblocks.Component;
@@ -25,8 +27,11 @@ import expressionsolver.Expression;
 import expressionsolver.ExpressionSolver;
 import org.nfunk.jep.JEP;
 import org.nfunk.jep.Node;
+import org.nfunk.jep.type.DoubleNumberFactory;
 
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.Map;
 /**
  * Orchestrator of feature-family-product-based analyses.
@@ -47,19 +52,17 @@ public class FeatureFamilyProductBasedAnalyzer {
     	this.timeCollector = timeCollector;
     }
 
-    public IReliabilityAnalysisResults evaluateReliability(RDGNode node, ConcurrencyStrategy concurrencyStrategy) throws CyclicRdgException {
+    public IReliabilityAnalysisResults evaluateReliability(RDGNode node, Stream<Collection<String>> configurations, ConcurrencyStrategy concurrencyStrategy) throws CyclicRdgException {
     	List<RDGNode> dependencies = node.getDependenciesTransitiveClosure();
     	
     	List<Component<String>> components = firstPhase.getReliabilityExpressions(dependencies, concurrencyStrategy);
     	
     	int n = components.size();
     	List<String> variables = components.stream().map(e -> e.getId()).collect(Collectors.toList());
-    	// List<String> variables = components.stream().map(e -> e.getId()).collect(Collectors.toList());
     	List<String> expressions = components.stream().map(e -> e.getAsset()).collect(Collectors.toList());
     	List<String> pcs = components.stream().map(e -> e.getPresenceCondition()).collect(Collectors.toList());
     	Map<String,String> var2exp = new HashMap<String,String>();
     	Map<String, String> var2pc = new HashMap<String, String>();
-    	Map<String,Double> var2val = new HashMap<String, Double>();
     	Map<String,String> var2ite = new HashMap<String,String>();
 
     	for (int i = 0; i < n; i++) {
@@ -67,17 +70,6 @@ public class FeatureFamilyProductBasedAnalyzer {
     		var2pc.put(variables.get(i), pcs.get(i));
     	}
 
-    	JEP parser = new JEP();
-    	JEP parserStr = new JEP();
-
-    	for (String variable : variables) {
-    		System.out.println("Adding variable " + variable + " as " + var2exp.get(variable));
-    		parser.parseExpression(var2exp.get(variable));
-    		Double value = parser.getValue();
-    		var2val.put(variable, value);
-    		parser.addVariableAsObject(variable, value);
-    		
-    	}
         
     	/* get the ite expressions */
     	for (int i = 0; i < n; i++) {
@@ -93,17 +85,37 @@ public class FeatureFamilyProductBasedAnalyzer {
     		String ite = getITEExpression(var, exp);
     		var2ite.put(var, ite);
     	}
-    	System.out.println("parsing expression " + var2exp.get("BSN"));
-    	parser.parseExpression("BSN");
-    	Node p = parser.getTopNode();
-    	System.out.println(parser.getValueAsObject());
-    	System.out.println(parser.getErrorInfo());
+    	
+    	String iteExpression = var2ite.get(variables.get(n-1));
 
-    	System.out.println(var2ite.get("BSN"));
-
-    	/* TODO: Variability encoding */
-    	/* TODO: Product-based step */
-        return null;
+    	Map<Collection<String>, Double> results = new HashMap<Collection<String>, Double>();
+    	for (Collection<String> config : configurations.collect(Collectors.toList())) {
+    		Map <String, Double> var2double = new HashMap<String, Double>();
+    		for (String var : config) {
+    			var2double.put(var, 1.0);
+    		}
+    		for (String var : variables) {
+    			String pc = var2pc.get(var);
+    			if (pc == "true") {
+    				var2double.put(var, 1.0);
+    			} else if (var2double.containsKey(pc)) {
+    				var2double.put(var, var2double.get(pc));
+    			} else {
+    				var2double.put(var, 0.0);
+    			}
+    			if (var == "BSN") {
+    				var2double.put(var, 0.0);
+    			}
+    		}
+    		
+    		JEP parser1 = new JEP();
+    		parser1.setImplicitMul(true);
+    		variables.forEach(v -> parser1.addVariable(v, var2double.get(v)));
+    		parser1.parseExpression(iteExpression);
+    		Double reliability = parser1.getValue();
+    		results.put(config, reliability);
+    	}
+        return new MapBasedReliabilityResults(results);
     }
     
     private String getITEExpression(String variable, String expression) {
