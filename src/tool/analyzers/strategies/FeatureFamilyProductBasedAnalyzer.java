@@ -29,10 +29,15 @@ import org.nfunk.jep.JEP;
 import org.nfunk.jep.Node;
 import org.nfunk.jep.type.DoubleNumberFactory;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
+import java.lang.Runtime;
 /**
  * Orchestrator of feature-family-product-based analyses.
  */
@@ -53,6 +58,7 @@ public class FeatureFamilyProductBasedAnalyzer {
     }
 
     public IReliabilityAnalysisResults evaluateReliability(RDGNode node, Stream<Collection<String>> configurations, ConcurrencyStrategy concurrencyStrategy) throws CyclicRdgException {
+    	// START
     	List<RDGNode> dependencies = node.getDependenciesTransitiveClosure();
     	
     	/* feature step */
@@ -65,61 +71,91 @@ public class FeatureFamilyProductBasedAnalyzer {
     	List<String> pcs = components.stream().map(e -> e.getPresenceCondition()).collect(Collectors.toList());
     	Map<String,String> var2exp = new HashMap<String,String>();
     	Map<String, String> var2pc = new HashMap<String, String>();
-    	Map<String,String> var2ite = new HashMap<String,String>();
 
-    	for (int i = 0; i < n; i++) {
-    		var2exp.put(variables.get(i), expressions.get(i));
-    		var2pc.put(variables.get(i), pcs.get(i));
-    	}
+  		PrintWriter writer;
+		try {
+			writer = new PrintWriter("/home/breno/tmp/formulas.txt", "UTF-8");
+			for (int i = 0; i < n; i++) {
+				String var = variables.get(i);
+				String exp = expressions.get(i);
+				String pc = pcs.get(i);
+    		
+				var2exp.put(var, exp);
+				var2pc.put(var, pc);
+    		
+				writer.println(var + "\n" + exp);
+			}
+			writer.close();
+		} catch (FileNotFoundException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		} catch (UnsupportedEncodingException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
         
     	/* expression variability encoding */
-    	/* get the ite expressions */
-    	for (int i = 0; i < n; i++) {
-    		String var = variables.get(i);
-    		String exp = var2exp.get(var);
-    		
-    		for (int j = 0; j < i; j++) {
-    			String varPrev = variables.get(j);
-    			String newExp = exp.replace(varPrev, "(" + var2ite.get(varPrev) + ")");
-    			exp = newExp;
-    		}
-    		
-    		String ite = getITEExpression(var, exp);
-    		var2ite.put(var, ite);
-    	}
-    	
-    	/* this is the single expression that encodes the reliability of the product line */
-    	String iteExpression = var2ite.get(variables.get(n-1));
 
     	/* product iteration step */
+    	int i = 0;
     	Map<Collection<String>, Double> results = new HashMap<Collection<String>, Double>();
-    	for (Collection<String> config : configurations.collect(Collectors.toList())) {
-    		Map <String, Double> var2double = new HashMap<String, Double>();
+    	List<Collection<String>> configList = configurations.collect(Collectors.toList());
+    	List<String> paths = new LinkedList<String>();
+    	for (Collection<String> config : configList) {
+    		Map <String, Integer> var2value = new HashMap<String, Integer>();
     		for (String var : config) {
-    			var2double.put(var, 1.0);
+    			var2value.put(var, 1);
     		}
     		for (String var : variables) {
     			String pc = var2pc.get(var);
     			if (pc == "true") {
-    				var2double.put(var, 1.0);
-    			} else if (var2double.containsKey(pc)) {
-    				var2double.put(var, var2double.get(pc));
+    				var2value.put(var, 1);
+    			} else if (var2value.containsKey(pc)) {
+    				var2value.put(var, var2value.get(pc));
     			} else {
-    				var2double.put(var, 0.0);
+    				var2value.put(var, 0);
     			}
     		}
-    		
-    		JEP parser1 = new JEP();
-    		parser1.setImplicitMul(true);
-    		variables.forEach(v -> parser1.addVariable(v, var2double.get(v)));
-    		parser1.parseExpression(iteExpression);
-    		Double reliability = parser1.getValue();
-    		results.put(config, reliability);
+
+    		PrintWriter valueWriter;
+			try {
+				String path = "/home/breno/tmp/values-" + i + ".txt";
+				valueWriter = new PrintWriter(path, "UTF-8");
+				variables.forEach(v -> valueWriter.println(v + "\n" + var2value.get(v)));
+				valueWriter.close();
+				paths.add(path);
+			} catch (FileNotFoundException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			} catch (UnsupportedEncodingException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+    		i++;
     	}
+    	
+    	// call program
+    	String command = "/home/breno/Documents/formula-parser/TestLang /home/breno/tmp/formulas.txt";
+    	for (String path : paths) {
+    		command += " " + path;
+    	}
+
+    	command += " /home/breno/tmp/output.txt";
+    	
+    	Runtime rt = Runtime.getRuntime();
+    	try {
+			Process program = rt.exec(command);
+			int exitCode = program.waitFor();
+			System.out.println("Exit code: " + exitCode);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+    	// TODO read results
         return new MapBasedReliabilityResults(results);
-    }
-    
-    private String getITEExpression(String variable, String expression) {
-    	return variable + "*(" + expression + ") + (1-" + variable + ")";
     }
 }
