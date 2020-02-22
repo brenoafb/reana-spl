@@ -58,7 +58,6 @@ public class FeatureFamilyProductBasedAnalyzer {
     }
 
     public IReliabilityAnalysisResults evaluateReliability(RDGNode node, Stream<Collection<String>> configurations, ConcurrencyStrategy concurrencyStrategy) throws CyclicRdgException {
-    	// START
     	List<RDGNode> dependencies = node.getDependenciesTransitiveClosure();
     	
     	/* feature step */
