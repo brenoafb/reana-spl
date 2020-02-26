@@ -90,7 +90,7 @@ public class FeatureFamilyProductBasedAnalyzer {
 		expression = replaceVariables(expression, varToPC, pcEquivalence);
 
 		Expression<Double> parsedExpression = expressionSolver.parseExpression(expression);
-
+		
 		Map<Collection<String>, Double> results = 
 			ProductIterationHelper.evaluate(configuration -> evaluateSingle(parsedExpression,
 				configuration,
@@ -106,9 +106,7 @@ public class FeatureFamilyProductBasedAnalyzer {
 		for (String var : vars) {
 			String pc = varToPC.get(var);
 			String newVar = pcEquiv.get(pc);
-			exp = preprocessExpression(exp);
 			exp = substitute(var, newVar, exp);
-			exp = postprocessExpression(exp);
 		}
 		
 		return exp;
@@ -128,13 +126,10 @@ public class FeatureFamilyProductBasedAnalyzer {
 
 			for (int j = 0; j < i; j++) {
 				String varSubs = variables.get(j);
-				exp = preprocessExpression(exp);
 				exp = substitute(varSubs, var2ite.get(varSubs), exp);
-				exp = postprocessExpression(exp);
 			}
 
 			String ite = getITE(var, exp, "1.0");
-			ite = postprocessExpression(ite);
 			var2ite.put(var, ite);
 		}
 
@@ -144,7 +139,7 @@ public class FeatureFamilyProductBasedAnalyzer {
 	}
 
 	private String getITE(String var, String exp, String alt) {
-		return String.format("(((%s) * (%s)) + ((1-%s)*(%s)))", var, exp, var, alt);
+		return String.format("(((%s)*(%s)) + ((1-%s)*(%s)))", var, exp, var, alt);
 	}
 
 	private Double evaluateSingle(Expression<Double> expression, Collection<String> configuration, Map<String, String> eqClassToPC) {
@@ -159,23 +154,18 @@ public class FeatureFamilyProductBasedAnalyzer {
 
 	}
 
-	private String substitute(String var, String subs, String exp) {
-		String newExp = exp.replaceAll(" " + var + " ", "(" + subs + ")");
+	public static String substitute(String var, String subs, String exp) {
+		String newExp = exp.replaceAll("\\b"+var+"\\b", subs);
 		return newExp;
 	}
 
-	private String preprocessExpression(String exp) {
+	public static String preprocessExpression(String exp) {
 		exp = exp.replaceAll("\\(", " ( ");
 		exp = exp.replaceAll("\\)", " ) ");
 		exp = exp.replaceAll("\\+", " + ");
 		exp = exp.replaceAll("\\-", " - ");
 		exp = exp.replaceAll("\\*", " * ");
 		exp = exp.replaceAll("\\/", " / ");
-		return exp;
-	}
-	
-	private String postprocessExpression(String exp) {
-		exp = exp.replaceAll(" ", "");
 		return exp;
 	}
 }
