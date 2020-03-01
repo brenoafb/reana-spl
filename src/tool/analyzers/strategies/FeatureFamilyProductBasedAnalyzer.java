@@ -66,9 +66,12 @@ public class FeatureFamilyProductBasedAnalyzer {
 		List<RDGNode> dependencies = node.getDependenciesTransitiveClosure();
 
 		/* feature step */
+        timeCollector.startTimer(CollectibleTimers.MODEL_CHECKING_TIME);
 		List<Component<String>> components = firstPhase.getReliabilityExpressions(dependencies, concurrencyStrategy);
+        timeCollector.stopTimer(CollectibleTimers.MODEL_CHECKING_TIME);
 
 		/* variability encoding */
+        timeCollector.startTimer(CollectibleTimers.EXPRESSION_SOLVING_TIME);
 		String expression = getExpression(dependencies, components);
 
 		/* iterate products */
@@ -97,6 +100,7 @@ public class FeatureFamilyProductBasedAnalyzer {
 				eqClassToPC),
 				configurations,
 				concurrencyStrategy);
+        timeCollector.startTimer(CollectibleTimers.EXPRESSION_SOLVING_TIME);
 		return new MapBasedReliabilityResults(results);
 	}
 
@@ -157,15 +161,5 @@ public class FeatureFamilyProductBasedAnalyzer {
 	public static String substitute(String var, String subs, String exp) {
 		String newExp = exp.replaceAll("\\b"+var+"\\b", subs);
 		return newExp;
-	}
-
-	public static String preprocessExpression(String exp) {
-		exp = exp.replaceAll("\\(", " ( ");
-		exp = exp.replaceAll("\\)", " ) ");
-		exp = exp.replaceAll("\\+", " + ");
-		exp = exp.replaceAll("\\-", " - ");
-		exp = exp.replaceAll("\\*", " * ");
-		exp = exp.replaceAll("\\/", " / ");
-		return exp;
 	}
 }
