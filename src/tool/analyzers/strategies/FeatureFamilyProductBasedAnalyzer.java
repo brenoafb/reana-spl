@@ -6,6 +6,7 @@ import jadd.JADD;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.logging.Logger;
 
 import paramwrapper.ParametricModelChecker;
 import tool.CyclicRdgException;
@@ -46,6 +47,7 @@ import java.lang.Runtime;
  */
 public class FeatureFamilyProductBasedAnalyzer {
 
+    private static final Logger LOGGER = Logger.getLogger(FamilyProductBasedAnalyzer.class.getName());
 	private ExpressionSolver expressionSolver;
 	private FeatureBasedFirstPhase firstPhase;
 	private ITimeCollector timeCollector;
@@ -63,6 +65,9 @@ public class FeatureFamilyProductBasedAnalyzer {
 	}
 
 	public IReliabilityAnalysisResults evaluateReliability(RDGNode node, Stream<Collection<String>> configurations, ConcurrencyStrategy concurrencyStrategy) throws CyclicRdgException {
+        if (concurrencyStrategy == ConcurrencyStrategy.PARALLEL) {
+            LOGGER.info("Solving the family-wide expression for each product in parallel.");
+        }
 		List<RDGNode> dependencies = node.getDependenciesTransitiveClosure();
 
 		/* feature step */
@@ -92,14 +97,25 @@ public class FeatureFamilyProductBasedAnalyzer {
 		
 		expression = replaceVariables(expression, varToPC, pcEquivalence);
 
-		Expression<Double> parsedExpression = expressionSolver.parseExpression(expression);
+		Map<Collection<String>, Double> results;
+
+        if (concurrencyStrategy == ConcurrencyStrategy.SEQUENTIAL) {
+            Expression<Double> parsedExpression = expressionSolver.parseExpression(expression);
+            results = ProductIterationHelper.evaluate(configuration -> evaluateSingle(parsedExpression,
+                                                                                      configuration,
+                                                                                      eqClassToPC),
+                                                      configurations,
+                                                      concurrencyStrategy);
+        } else {
+        	String expressionCopy = expression;
+            results = ProductIterationHelper.evaluate(configuration -> evaluateSingle(expressionCopy,
+                                                                                      configuration,
+                                                                                      eqClassToPC),
+                                                      configurations,
+                                                      concurrencyStrategy);
+        }
 		
-		Map<Collection<String>, Double> results = 
-			ProductIterationHelper.evaluate(configuration -> evaluateSingle(parsedExpression,
-				configuration,
-				eqClassToPC),
-				configurations,
-				concurrencyStrategy);
+        LOGGER.info("Formulae evaluation ok...");
         timeCollector.startTimer(CollectibleTimers.EXPRESSION_SOLVING_TIME);
 		return new MapBasedReliabilityResults(results);
 	}
@@ -157,6 +173,11 @@ public class FeatureFamilyProductBasedAnalyzer {
 		return expression.solve(values);
 
 	}
+
+    private Double evaluateSingle(String expression, Collection<String> configuration, Map<String, String> eqClassToPC) {
+        Expression<Double> parsedExpression = expressionSolver.parseExpression(expression);
+        return evaluateSingle(parsedExpression, configuration, eqClassToPC);
+    }
 
 	public static String substitute(String var, String subs, String exp) {
 		String newExp = exp.replaceAll("\\b"+var+"\\b", subs);
