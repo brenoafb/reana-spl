@@ -11,16 +11,10 @@ import java.util.logging.Logger;
 import paramwrapper.ParametricModelChecker;
 import tool.CyclicRdgException;
 import tool.RDGNode;
-import tool.analyzers.ADDReliabilityResults;
-import tool.analyzers.IPruningStrategy;
 import tool.analyzers.IReliabilityAnalysisResults;
 import tool.analyzers.MapBasedReliabilityResults;
-import tool.analyzers.NoPruningStrategy;
-import tool.analyzers.buildingblocks.AssetProcessor;
 import tool.analyzers.buildingblocks.Component;
 import tool.analyzers.buildingblocks.ConcurrencyStrategy;
-import tool.analyzers.buildingblocks.DerivationFunction;
-import tool.analyzers.buildingblocks.FamilyBasedHelper;
 import tool.analyzers.buildingblocks.PresenceConditions;
 import tool.analyzers.buildingblocks.ProductIterationHelper;
 import tool.stats.CollectibleTimers;
@@ -28,20 +22,11 @@ import tool.stats.IFormulaCollector;
 import tool.stats.ITimeCollector;
 import expressionsolver.Expression;
 import expressionsolver.ExpressionSolver;
-import org.nfunk.jep.JEP;
-import org.nfunk.jep.Node;
-import org.nfunk.jep.type.DoubleNumberFactory;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.UnsupportedEncodingException;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.Map;
 import java.util.function.Function;
-import java.lang.Runtime;
 /**
  * Orchestrator of feature-family-product-based analyses.
  */
