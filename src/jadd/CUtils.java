@@ -28,7 +28,6 @@ class CUtils {
 				path = "/lib/x86_64-linux-gnu/libc.so.6";
 			}
 
-			System.out.println("libc path: " + path);
 			libc = NativeLibrary.load(path);
 
 			Pointer<?> fopenAddress = libc.getSymbolPointer("fopen");
