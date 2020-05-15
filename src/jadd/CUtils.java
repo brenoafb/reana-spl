@@ -57,7 +57,10 @@ class CUtils {
 		String path = stdInput.readLine();
 		int exitCode = pr.waitFor();
 
-		System.out.println("Exit code: " + exitCode);
+		if (exitCode != 0) {
+			throw new IOException("Error getting library path from gcc.");
+		}
+
 		return path;
 	}
 }
