@@ -110,6 +110,13 @@ public class JADD {
                 fileName);
     }
     
+    /**
+     * Writes an ADD to a text file using the functionality provided by
+     * the dddmp library.
+     * @param functionName Name of the function represented by the ADD.
+     * @param add ADD to be stored to the file.
+     * @param fileName Name of the text file to be written.
+     */
     public void dumpADD(String functionName, ADD add, String fileName) {
         Pointer<?> output = CUtils.fopen(fileName, CUtils.ACCESS_WRITE);
         
@@ -132,6 +139,11 @@ public class JADD {
         CUtils.fclose(output);
     }
     
+    /**
+     * Reads an ADD from a text file written by the dumpADD method.
+     * @param fileName Name of the file of containing the ADD.
+     * @return New ADD instance containing the read information.
+     */
     public ADD readADD(String fileName) {
         Pointer<?> output = CUtils.fopen(fileName, CUtils.ACCESS_READ);
 
