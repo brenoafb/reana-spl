@@ -129,7 +129,31 @@ public class JADD {
                                           varinfo, 
                                           fname, 
                                           output);
+        CUtils.fclose(output);
+    }
+    
+    public ADD readADD(String fileName) {
+        Pointer<?> output = CUtils.fopen(fileName, CUtils.ACCESS_READ);
+
+        String[] orderedVariableNames = variableStore.getOrderedNames();
+        
+        IntValuedEnum<BigcuddLibrary.Dddmp_VarMatchType> varMatchMode = BigcuddLibrary.Dddmp_VarMatchType.DDDMP_VAR_MATCHIDS;
+        Pointer<Pointer<Byte>> varmatchnames = Pointer.pointerToCStrings(orderedVariableNames);
+        Pointer<Integer> varmatchauxids = null;
+        Pointer<Integer> varcomposeids = null;
+        int mode = BigcuddLibrary.DDDMP_MODE_TEXT;
+        Pointer<Byte> file = Pointer.pointerToCString(fileName);
+        Pointer<DdNode> node = BigcuddLibrary.Dddmp_cuddAddLoad(dd,
+                                                                varMatchMode,
+                                                                varmatchnames,
+                                                                varmatchauxids,
+                                                                varcomposeids,
+                                                                mode,
+                                                                file,
+                                                                output);
 
         CUtils.fclose(output);
+        
+        return new ADD(dd, node, variableStore);
     }
 }
