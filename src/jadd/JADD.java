@@ -109,5 +109,27 @@ public class JADD {
                 new ADD[]{function},
                 fileName);
     }
+    
+    public void dumpADD(String functionName, ADD add, String fileName) {
+        Pointer<?> output = CUtils.fopen(fileName, CUtils.ACCESS_WRITE);
+        
+        Pointer<Byte> ddname = Pointer.pointerToCString(functionName);
+        Pointer<DdNode> f = add.getUnderlyingNode();
+        String[] orderedVariableNames = variableStore.getOrderedNames(); 
+        Pointer<Pointer<Byte>> varnames = Pointer.pointerToCStrings(orderedVariableNames);
+        Pointer<Integer> auxids = null;
+        BigcuddLibrary.Dddmp_VarInfoType varinfo = BigcuddLibrary.Dddmp_VarInfoType.DDDMP_VARIDS;        
+        Pointer<Byte> fname = Pointer.pointerToCString(fileName);
+        BigcuddLibrary.Dddmp_cuddAddStore(dd, 
+                                          ddname, 
+                                          f, 
+                                          varnames, 
+                                          auxids, 
+                                          BigcuddLibrary.DDDMP_MODE_TEXT, 
+                                          varinfo, 
+                                          fname, 
+                                          output);
 
+        CUtils.fclose(output);
+    }
 }
