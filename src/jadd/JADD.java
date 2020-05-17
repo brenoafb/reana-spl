@@ -113,14 +113,20 @@ public class JADD {
     /**
      * Writes an ADD to a text file using the functionality provided by
      * the dddmp library.
-     * @param functionName Name of the function represented by the ADD.
+     * @param functionName Name of the function represented by the ADD (Can be empty or null).
      * @param add ADD to be stored to the file.
      * @param fileName Name of the text file to be written.
      */
     public void dumpADD(String functionName, ADD add, String fileName) {
         Pointer<?> output = CUtils.fopen(fileName, CUtils.ACCESS_WRITE);
         
-        Pointer<Byte> ddname = Pointer.pointerToCString(functionName);
+        Pointer<Byte> ddname;
+        if (functionName == null || functionName.isEmpty()) {
+            ddname = null;
+        } else {
+            ddname = Pointer.pointerToCString(functionName);
+        }
+
         Pointer<DdNode> f = add.getUnderlyingNode();
         String[] orderedVariableNames = variableStore.getOrderedNames(); 
         Pointer<Pointer<Byte>> varnames = Pointer.pointerToCStrings(orderedVariableNames);
