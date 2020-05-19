@@ -127,22 +127,57 @@ public class JADD {
             ddname = Pointer.pointerToCString(functionName);
         }
 
-        Pointer<DdNode> f = add.getUnderlyingNode();
         String[] orderedVariableNames = variableStore.getOrderedNames(); 
-        Pointer<Pointer<Byte>> varnames = Pointer.pointerToCStrings(orderedVariableNames);
-        Pointer<Integer> auxids = null;
-        BigcuddLibrary.Dddmp_VarInfoType varinfo = BigcuddLibrary.Dddmp_VarInfoType.DDDMP_VARIDS;        
-        Pointer<Byte> fname = Pointer.pointerToCString(fileName);
         BigcuddLibrary.Dddmp_cuddAddStore(dd, 
                                           ddname, 
-                                          f, 
-                                          varnames, 
-                                          auxids, 
+                                          add.getUnderlyingNode(), 
+                                          Pointer.pointerToCStrings(orderedVariableNames), 
+                                          null, 
                                           BigcuddLibrary.DDDMP_MODE_TEXT, 
-                                          varinfo, 
-                                          fname, 
+                                          BigcuddLibrary.Dddmp_VarInfoType.DDDMP_VARIDS, 
+                                          Pointer.pointerToCString(fileName), 
                                           output);
         CUtils.fclose(output);
+    }
+    
+    public void dumpADD(ADD add, String fileName) {
+        dumpADD(null, add, fileName);
+    }
+
+    public void dumpADD(String name, String[] functionNames, ADD[] adds, String fileName) {
+        Pointer<?> output = CUtils.fopen(fileName, CUtils.ACCESS_WRITE);
+
+        @SuppressWarnings("unchecked")
+        Pointer<DdNode>[] nodes = (Pointer<DdNode>[]) new Pointer[adds.length];
+        int i = 0;
+        for (ADD function : adds) {
+            nodes[i] = function.getUnderlyingNode();
+            i++;
+        }
+        String[] orderedVariableNames = variableStore.getOrderedNames();
+
+        
+        BigcuddLibrary.Dddmp_cuddAddArrayStore(dd,
+                                               Pointer.pointerToCString(name),
+                                               nodes.length,
+                                               Pointer.pointerToPointers(nodes),
+                                               Pointer.pointerToCStrings(functionNames),
+                                               Pointer.pointerToCStrings(orderedVariableNames),
+                                               null, // auxids
+                                               BigcuddLibrary.DDDMP_MODE_TEXT,
+                                               BigcuddLibrary.Dddmp_VarInfoType.DDDMP_VARIDS, // varinfo
+                                               Pointer.pointerToCString(fileName),
+                                               output);
+    }
+    
+    public ADD[] readADDs(String fileName) {
+        // TODO
+        return null;
+    }
+    
+    public void dumpADD(String name, Map<String, ADD> adds, String fileName) {
+        // TODO
+        return;
     }
     
     /**
@@ -151,26 +186,21 @@ public class JADD {
      * @return New ADD instance containing the read information.
      */
     public ADD readADD(String fileName) {
-        Pointer<?> output = CUtils.fopen(fileName, CUtils.ACCESS_READ);
+        Pointer<?> input = CUtils.fopen(fileName, CUtils.ACCESS_READ);
 
-        String[] orderedVariableNames = variableStore.getOrderedNames();
-        
         IntValuedEnum<BigcuddLibrary.Dddmp_VarMatchType> varMatchMode = BigcuddLibrary.Dddmp_VarMatchType.DDDMP_VAR_MATCHIDS;
-        Pointer<Pointer<Byte>> varmatchnames = Pointer.pointerToCStrings(orderedVariableNames);
-        Pointer<Integer> varmatchauxids = null;
-        Pointer<Integer> varcomposeids = null;
         int mode = BigcuddLibrary.DDDMP_MODE_TEXT;
         Pointer<Byte> file = Pointer.pointerToCString(fileName);
         Pointer<DdNode> node = BigcuddLibrary.Dddmp_cuddAddLoad(dd,
                                                                 varMatchMode,
-                                                                varmatchnames,
-                                                                varmatchauxids,
-                                                                varcomposeids,
+                                                                null,
+                                                                null,
+                                                                null,
                                                                 mode,
                                                                 file,
-                                                                output);
+                                                                input);
 
-        CUtils.fclose(output);
+        CUtils.fclose(input);
         
         return new ADD(dd, node, variableStore);
     }
