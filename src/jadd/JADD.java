@@ -143,42 +143,6 @@ public class JADD {
     public void dumpADD(ADD add, String fileName) {
         dumpADD(null, add, fileName);
     }
-
-    public void dumpADD(String name, String[] functionNames, ADD[] adds, String fileName) {
-        Pointer<?> output = CUtils.fopen(fileName, CUtils.ACCESS_WRITE);
-
-        @SuppressWarnings("unchecked")
-        Pointer<DdNode>[] nodes = (Pointer<DdNode>[]) new Pointer[adds.length];
-        int i = 0;
-        for (ADD function : adds) {
-            nodes[i] = function.getUnderlyingNode();
-            i++;
-        }
-        String[] orderedVariableNames = variableStore.getOrderedNames();
-
-        
-        BigcuddLibrary.Dddmp_cuddAddArrayStore(dd,
-                                               Pointer.pointerToCString(name),
-                                               nodes.length,
-                                               Pointer.pointerToPointers(nodes),
-                                               Pointer.pointerToCStrings(functionNames),
-                                               Pointer.pointerToCStrings(orderedVariableNames),
-                                               null, // auxids
-                                               BigcuddLibrary.DDDMP_MODE_TEXT,
-                                               BigcuddLibrary.Dddmp_VarInfoType.DDDMP_VARIDS, // varinfo
-                                               Pointer.pointerToCString(fileName),
-                                               output);
-    }
-    
-    public ADD[] readADDs(String fileName) {
-        // TODO
-        return null;
-    }
-    
-    public void dumpADD(String name, Map<String, ADD> adds, String fileName) {
-        // TODO
-        return;
-    }
     
     /**
      * Reads an ADD from a text file written by the dumpADD method.
