@@ -21,7 +21,7 @@ class CUtils {
     static {
         try {
             // TODO Make libc's path portable!
-            libc = NativeLibrary.load("/usr/lib/libc.so.6");
+            libc = NativeLibrary.load("/lib/x86_64-linux-gnu/libc.so.6");
 
             Pointer<?> fopenAddress = libc.getSymbolPointer("fopen");
             fopenHandle = fopenAddress.asDynamicFunction(null, Pointer.class, Pointer.class, Pointer.class);
