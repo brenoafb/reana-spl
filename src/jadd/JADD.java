@@ -1,6 +1,14 @@
 package jadd;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.bridj.IntValuedEnum;
 import org.bridj.Pointer;
@@ -18,16 +26,33 @@ import bigcudd.DdNode;
 public class JADD {
 
     private Pointer<BigcuddLibrary.DdManager> dd;
-    private VariableStore variableStore = new VariableStore();
+    private VariableStore variableStore;
 
     public JADD() {
         dd = BigcuddLibrary.Cudd_Init(0,
-                                      0,
-                                      BigcuddLibrary.CUDD_UNIQUE_SLOTS,
-                                      BigcuddLibrary.CUDD_CACHE_SLOTS,
-                                      0);
+                0,
+                BigcuddLibrary.CUDD_UNIQUE_SLOTS,
+                BigcuddLibrary.CUDD_CACHE_SLOTS,
+                0);
         IntValuedEnum<Cudd_ReorderingType> method = Cudd_ReorderingType.CUDD_REORDER_SYMM_SIFT;
-//        BigcuddLibrary.Cudd_AutodynEnable(dd, method);
+        variableStore = new VariableStore();
+        //        BigcuddLibrary.Cudd_AutodynEnable(dd, method);
+    }
+
+    public JADD(String tableFileName) {
+        dd = BigcuddLibrary.Cudd_Init(0,
+                0,
+                BigcuddLibrary.CUDD_UNIQUE_SLOTS,
+                BigcuddLibrary.CUDD_CACHE_SLOTS,
+                0);
+        IntValuedEnum<Cudd_ReorderingType> method = Cudd_ReorderingType.CUDD_REORDER_SYMM_SIFT;
+        VariableStore vs = this.readTable(tableFileName);
+        if (vs != null) {
+            variableStore = vs;
+        } else {
+            System.out.println("ERROR reading table file");
+            variableStore = new VariableStore();
+        }
     }
 
     public ADD makeConstant(double constant) {
@@ -168,4 +193,45 @@ public class JADD {
         
         return new ADD(dd, node, variableStore);
     }
+
+    public void writeVariableStore(String fileName) {
+        try {
+            this.variableStore.writeTable(this, fileName);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private VariableStore readTable(String fileName) {
+        try (Stream<String> stream = Files.lines(Paths.get(fileName))) {
+            List<List<Object>> tokens = stream.map(line -> parseLine(line)).collect(Collectors.toList());
+            List<Short> indices = tokens.stream().map(list -> (Short) list.get(0)).collect(Collectors.toList());
+            List<String> variableNames = tokens.stream().map(list -> (String) list.get(1)).collect(Collectors.toList());
+            List<String> fileNames = tokens.stream().map(list -> (String) list.get(2)).collect(Collectors.toList());
+            List<ADD> adds = fileNames.stream().map(addFileName -> readADD(addFileName)).collect(Collectors.toList());
+            return new VariableStore(indices, variableNames, adds);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    private List<Object> parseLine(String line) {
+       String[] split = line.split("\\s+");
+       if (split.length != 3) {
+           return null;
+       }
+
+       Short index = Short.parseShort(split[0]);
+       String variableName = split[1];
+       String fileName = split[2];
+
+       List<Object> tokens = new ArrayList<Object>();
+       tokens.add(0, index);
+       tokens.add(1, variableName);
+       tokens.add(2, fileName);
+
+       return tokens;
+    }
+
 }

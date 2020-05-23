@@ -1,5 +1,7 @@
 package jadd;
 
+import java.io.FileNotFoundException;
+import java.io.PrintWriter;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -8,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.stream.Collectors;
 
 public class VariableStore {
     private Map<String, ADD> variables;
@@ -19,6 +22,20 @@ public class VariableStore {
         variableNames = new TreeMap<Short, String>();
         variableIndices = new HashMap<String, Short>();
     }
+
+    public VariableStore(List<Short> indices, List<String> varNames, List<ADD> adds) {
+        this();
+        int n = indices.size();
+        for (int i = 0; i < n; i++) {
+            Short index = indices.get(i);
+            String varName = varNames.get(i);
+            ADD add = adds.get(i);
+            variables.put(varName, add);
+            variableNames.put(index, varName);
+            variableIndices.put(varName, index);
+        }
+    }
+
 
     public int getNumberOfVariables() {
         return variables.size();
@@ -113,5 +130,20 @@ public class VariableStore {
         }
         return permutationVector;
     }
+
+    public void writeTable(JADD jadd, String fileName) throws FileNotFoundException {
+        List<Short> keyList = variableNames.keySet().stream().collect(Collectors.toList());
+        try (PrintWriter pw = new PrintWriter(fileName)) {
+            for (Short key : keyList) {
+                String name = variableNames.get(key);
+                String addName = name + ".add";
+                ADD add = variables.get(name);
+                pw.printf("%d %s %s\n", key, name, addName);
+                jadd.dumpADD(name, add, addName);
+            }
+            pw.close();
+        }
+    }
+
 
 }
