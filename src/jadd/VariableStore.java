@@ -23,8 +23,7 @@ public class VariableStore {
         variableIndices = new HashMap<String, Short>();
     }
 
-    public VariableStore(List<Short> indices, List<String> varNames, List<ADD> adds) {
-        this();
+    public void setMaps(List<Short> indices, List<String> varNames, List<ADD> adds) {
         int n = indices.size();
         for (int i = 0; i < n; i++) {
             Short index = indices.get(i);

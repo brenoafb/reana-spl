@@ -26,7 +26,7 @@ import bigcudd.DdNode;
 public class JADD {
 
     private Pointer<BigcuddLibrary.DdManager> dd;
-    private VariableStore variableStore;
+    private VariableStore variableStore = new VariableStore();
 
     public JADD() {
         dd = BigcuddLibrary.Cudd_Init(0,
@@ -35,7 +35,6 @@ public class JADD {
                 BigcuddLibrary.CUDD_CACHE_SLOTS,
                 0);
         IntValuedEnum<Cudd_ReorderingType> method = Cudd_ReorderingType.CUDD_REORDER_SYMM_SIFT;
-        variableStore = new VariableStore();
         //        BigcuddLibrary.Cudd_AutodynEnable(dd, method);
     }
 
@@ -46,12 +45,16 @@ public class JADD {
                 BigcuddLibrary.CUDD_CACHE_SLOTS,
                 0);
         IntValuedEnum<Cudd_ReorderingType> method = Cudd_ReorderingType.CUDD_REORDER_SYMM_SIFT;
-        VariableStore vs = this.readTable(tableFileName);
-        if (vs != null) {
-            variableStore = vs;
-        } else {
-            System.out.println("ERROR reading table file");
-            variableStore = new VariableStore();
+
+        try (Stream<String> stream = Files.lines(Paths.get(tableFileName))) {
+            List<List<Object>> tokens = stream.map(line -> parseLine(line)).collect(Collectors.toList());
+            List<Short> indices = tokens.stream().map(list -> (Short) list.get(0)).collect(Collectors.toList());
+            List<String> variableNames = tokens.stream().map(list -> (String) list.get(1)).collect(Collectors.toList());
+            List<String> fileNames = tokens.stream().map(list -> (String) list.get(2)).collect(Collectors.toList());
+            List<ADD> adds = fileNames.stream().map(addFileName -> readADD(addFileName)).collect(Collectors.toList());
+            variableStore.setMaps(indices, variableNames, adds);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
@@ -200,20 +203,6 @@ public class JADD {
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
-    }
-
-    private VariableStore readTable(String fileName) {
-        try (Stream<String> stream = Files.lines(Paths.get(fileName))) {
-            List<List<Object>> tokens = stream.map(line -> parseLine(line)).collect(Collectors.toList());
-            List<Short> indices = tokens.stream().map(list -> (Short) list.get(0)).collect(Collectors.toList());
-            List<String> variableNames = tokens.stream().map(list -> (String) list.get(1)).collect(Collectors.toList());
-            List<String> fileNames = tokens.stream().map(list -> (String) list.get(2)).collect(Collectors.toList());
-            List<ADD> adds = fileNames.stream().map(addFileName -> readADD(addFileName)).collect(Collectors.toList());
-            return new VariableStore(indices, variableNames, adds);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return null;
     }
 
     private List<Object> parseLine(String line) {
