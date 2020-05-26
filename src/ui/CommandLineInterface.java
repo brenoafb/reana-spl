@@ -168,7 +168,7 @@ public class CommandLineInterface {
         String dotOutput = "family-reliability.dot";
         try {
             analyzer.setPruningStrategy(PruningStrategyFactory.createPruningStrategy(options.getPruningStrategy()));
-            results = analyzer.evaluateFeatureFamilyBasedReliability(rdgRoot, null);
+            results = analyzer.evaluateFeatureFamilyBasedReliability(rdgRoot, dotOutput);
         } catch (CyclicRdgException e) {
             LOGGER.severe("Cyclic dependency detected in RDG.");
             LOGGER.log(Level.SEVERE, e.toString(), e);

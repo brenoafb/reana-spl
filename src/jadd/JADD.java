@@ -109,5 +109,63 @@ public class JADD {
                 new ADD[]{function},
                 fileName);
     }
+    
+    /**
+     * Writes an ADD to a text file using the functionality provided by
+     * the dddmp library.
+     * @param functionName Name of the function represented by the ADD (Can be empty or null).
+     * @param add ADD to be stored to the file.
+     * @param fileName Name of the text file to be written.
+     */
+    public void dumpADD(String functionName, ADD add, String fileName) {
+        Pointer<?> output = CUtils.fopen(fileName, CUtils.ACCESS_WRITE);
+        
+        Pointer<Byte> ddname;
+        if (functionName == null || functionName.isEmpty()) {
+            ddname = null;
+        } else {
+            ddname = Pointer.pointerToCString(functionName);
+        }
 
+        String[] orderedVariableNames = variableStore.getOrderedNames(); 
+        BigcuddLibrary.Dddmp_cuddAddStore(dd, 
+                                          ddname, 
+                                          add.getUnderlyingNode(), 
+                                          Pointer.pointerToCStrings(orderedVariableNames), 
+                                          null, 
+                                          BigcuddLibrary.DDDMP_MODE_TEXT, 
+                                          BigcuddLibrary.Dddmp_VarInfoType.DDDMP_VARIDS, 
+                                          Pointer.pointerToCString(fileName), 
+                                          output);
+        CUtils.fclose(output);
+    }
+    
+    public void dumpADD(ADD add, String fileName) {
+        dumpADD(null, add, fileName);
+    }
+    
+    /**
+     * Reads an ADD from a text file written by the dumpADD method.
+     * @param fileName Name of the file of containing the ADD.
+     * @return New ADD instance containing the read information.
+     */
+    public ADD readADD(String fileName) {
+        Pointer<?> input = CUtils.fopen(fileName, CUtils.ACCESS_READ);
+
+        IntValuedEnum<BigcuddLibrary.Dddmp_VarMatchType> varMatchMode = BigcuddLibrary.Dddmp_VarMatchType.DDDMP_VAR_MATCHIDS;
+        int mode = BigcuddLibrary.DDDMP_MODE_TEXT;
+        Pointer<Byte> file = Pointer.pointerToCString(fileName);
+        Pointer<DdNode> node = BigcuddLibrary.Dddmp_cuddAddLoad(dd,
+                                                                varMatchMode,
+                                                                null,
+                                                                null,
+                                                                null,
+                                                                mode,
+                                                                file,
+                                                                input);
+
+        CUtils.fclose(input);
+        
+        return new ADD(dd, node, variableStore);
+    }
 }
