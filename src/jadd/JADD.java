@@ -7,6 +7,8 @@ import org.bridj.Pointer;
 
 import bigcudd.BigcuddLibrary;
 import bigcudd.BigcuddLibrary.Cudd_ReorderingType;
+import bigcudd.BigcuddLibrary.Dddmp_VarInfoType;
+import bigcudd.BigcuddLibrary.Dddmp_VarMatchType;
 import bigcudd.DdNode;
 
 /**
@@ -110,6 +112,34 @@ public class JADD {
                 fileName);
     }
     
+    public void dumpDD(String functionName, ADD function, String fileName) {
+    	Pointer<?> output = CUtils.fopen(fileName, CUtils.ACCESS_WRITE);
+
+    	Pointer<Byte> ddname = Pointer.pointerToCString(functionName);
+    	Pointer<DdNode> f = function.getUnderlyingNode();
+
+    	String[] orderedVariableNames = variableStore.getOrderedNames();
+    	Pointer<Pointer<Byte>> varnames = Pointer.pointerToCStrings(orderedVariableNames);
+    	Pointer<Integer> auxids = null;
+
+    	bigcudd.BigcuddLibrary.Dddmp_VarInfoType varinfo = bigcudd.BigcuddLibrary.Dddmp_VarInfoType.DDDMP_VARIDS;
+
+    	Pointer<Byte> fname = Pointer.pointerToCString(fileName);
+    	Pointer<?> fp = output;
+
+    	bigcudd.BigcuddLibrary.Dddmp_cuddAddStore(dd,
+    			ddname, 
+    			f, 
+    			varnames, 
+    			auxids, 
+    			bigcudd.BigcuddLibrary.DDDMP_MODE_TEXT,
+    			varinfo, 
+    			fname, 
+    			fp);
+
+    	CUtils.fclose(output);
+    }
+    
     /**
      * Writes an ADD to a text file using the functionality provided by
      * the dddmp library.
@@ -139,7 +169,38 @@ public class JADD {
                                           output);
         CUtils.fclose(output);
     }
-    
+
+   
+    public ADD readDD(String functionName) {
+
+    	Dddmp_VarMatchType varMatchMode = Dddmp_VarMatchType.DDDMP_VAR_MATCHIDS;
+
+    	String[] orderedVariableNames = variableStore.getOrderedNames();
+    	Pointer<Pointer<Byte>> varMatchNames = Pointer.pointerToCStrings(orderedVariableNames);
+
+    	Pointer<Integer> varmatchauxids = null;
+    	Pointer<Integer> varcomposeids = null;
+
+    	int mode = bigcudd.BigcuddLibrary.DDDMP_MODE_TEXT;
+    	Pointer<Byte> fileName = Pointer.pointerToCString(functionName);
+    	Pointer<?> file = CUtils.fopen(functionName, CUtils.ACCESS_READ);
+
+
+    	Pointer<DdNode> answer = bigcudd.BigcuddLibrary.Dddmp_cuddAddLoad(dd,  
+    			varMatchMode, 
+    			varMatchNames, 
+    			varmatchauxids, 
+    			varcomposeids, 
+    			mode, 
+    			fileName, 
+    			file);
+    	if (answer == null) 
+    		return null; 
+    	else 
+    		return new ADD(this.dd, answer, variableStore);
+    	//		return 	answer;
+    }
+
     public void dumpADD(ADD add, String fileName) {
         dumpADD(null, add, fileName);
     }

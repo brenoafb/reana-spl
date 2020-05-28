@@ -138,7 +138,8 @@ public class FeatureFamilyBasedAnalyzer {
     private ADD solveFromMany(List<Component<Expression<ADD>>> dependencies) {
         return Component.deriveFromMany(dependencies,
                                         solve,
-                                        c -> expressionSolver.encodeFormula(c.getPresenceCondition()));
+                                        c -> expressionSolver.encodeFormula(c.getPresenceCondition()), 
+                                        jadd);
     }
 
 }
