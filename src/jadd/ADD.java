@@ -41,6 +41,55 @@ public class ADD {
         BigcuddLibrary.Cudd_Ref(this.function);
     }
 
+    ADD(Pointer<DdManager> dd, Pointer<DdNode> function, VariableStore variableStore, Boolean ref) {
+        this.dd = dd;
+        this.function = function;
+        this.variableStore = variableStore;
+        if (ref)
+            BigcuddLibrary.Cudd_Ref(this.function);
+    }
+
+
+    public ADD makeConstant(double constant) {
+        return new ADD(dd,
+                       BigcuddLibrary.Cudd_addConst(dd,  constant),
+                       variableStore);
+    }
+
+    public void dumpDot(String[] functionNames, ADD[] functions, String fileName) {
+        Pointer<?> output = CUtils.fopen(fileName, CUtils.ACCESS_WRITE);
+
+        @SuppressWarnings("unchecked")
+        Pointer<DdNode>[] nodes = (Pointer<DdNode>[]) new Pointer[functions.length];
+        int i = 0;
+        for (ADD function : functions) {
+            nodes[i] = function.getUnderlyingNode();
+            i++;
+        }
+
+        String[] orderedVariableNames = variableStore.getOrderedNames();
+        BigcuddLibrary.Cudd_DumpDot(dd,
+                                    functions.length,
+                                    Pointer.pointerToPointers(nodes),
+                                    Pointer.pointerToCStrings(orderedVariableNames),
+                                    Pointer.pointerToCStrings(functionNames),
+                                    output);
+
+        CUtils.fclose(output);
+    }
+
+    public void dumpDot(String functionName, ADD function, String fileName) {
+        dumpDot(new String[]{functionName},
+                new ADD[]{function},
+                fileName);
+    }
+    
+    public void dumpDot(String functionName, String fileName) {
+        dumpDot(new String[]{functionName},
+                new ADD[]{this},
+                fileName);
+    }
+
     /**
      * Overriding finalize in order to free CUDD allocated memory.
      */
@@ -105,6 +154,10 @@ public class ADD {
      * as the conditional.
      */
     public ADD ifThenElse(ADD ifTrue, ADD ifFalse) {
+        String time = java.time.LocalDateTime.now().toString();
+        String name = "add-" + time;
+        String filename = name + ".dot";
+        dumpDot(name, filename);
         Pointer<DdNode> result = BigcuddLibrary.Cudd_addIte(dd,
                                                             this.function,
                                                             ifTrue.function,

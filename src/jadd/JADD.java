@@ -33,10 +33,17 @@ public class JADD {
     }
 
     public ADD makeConstant(double constant) {
+        if (constant == 0) {
+            return new ADD(dd, BigcuddLibrary.Cudd_ReadZero(dd), variableStore, false);
+        } else if (constant == 1) {
+            return new ADD(dd, BigcuddLibrary.Cudd_ReadOne(dd), variableStore, false);
+        }
         return new ADD(dd,
                        BigcuddLibrary.Cudd_addConst(dd,  constant),
                        variableStore);
     }
+
+        
 
     public ADD getVariable(String varName) {
         if (variableStore.contains(varName)) {
